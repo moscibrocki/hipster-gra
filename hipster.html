@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#160b2e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>HIPSTER — muzyczna gra domówkowa</title>
+<style>
+  :root{
+    --bg1:#160b2e; --bg2:#2b1257; --card:#241242; --card2:#31195c;
+    --ink:#f5efff; --dim:#b9a8e0; --pink:#ff2e88; --cyan:#22e0ff; --yellow:#ffd166;
+    --green:#3ddc84; --red:#ff5470; --line:#453070;
+    --r:18px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    background:radial-gradient(120% 100% at 50% 0%, var(--bg2) 0%, var(--bg1) 60%);
+    color:var(--ink); min-height:100vh; min-height:100dvh;
+    padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  }
+  .wrap{max-width:480px;margin:0 auto;padding:16px 16px 40px;}
+  .screen{display:none;animation:fadeIn .25s ease;}
+  .screen.active{display:block;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+  h1.logo{
+    font-size:44px;letter-spacing:2px;text-align:center;margin:26px 0 4px;font-weight:900;
+    background:linear-gradient(90deg,var(--pink),var(--yellow),var(--cyan));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .tagline{text-align:center;color:var(--dim);margin:0 0 26px;font-size:14px;}
+  .disc-hero{width:120px;height:120px;margin:18px auto 6px;border-radius:50%;
+    background:
+      radial-gradient(circle at 50% 50%, #1a1a1f 0 18%, transparent 18.5%),
+      repeating-radial-gradient(circle at 50% 50%, #111 0 2px, #1d1d22 2px 4px);
+    border:4px solid #000;box-shadow:0 10px 40px rgba(255,46,136,.35), inset 0 0 0 2px #000;
+    position:relative;animation:spin 7s linear infinite;
+  }
+  .disc-hero::after{content:"";position:absolute;inset:39%;border-radius:50%;
+    background:conic-gradient(var(--pink),var(--yellow),var(--cyan),var(--pink));}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .btn{
+    display:block;width:100%;padding:16px 18px;margin:10px 0;border:none;border-radius:var(--r);
+    font-size:17px;font-weight:800;color:#fff;cursor:pointer;text-align:center;
+    background:linear-gradient(135deg,var(--pink),#b0186a);
+    box-shadow:0 6px 18px rgba(255,46,136,.35);
+    transition:transform .08s ease, filter .15s;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn.secondary{background:var(--card2);box-shadow:none;border:1px solid var(--line);color:var(--ink);}
+  .btn.ghost{background:transparent;border:1px dashed var(--line);color:var(--dim);box-shadow:none;font-weight:600;}
+  .btn.small{padding:10px 14px;font-size:14px;margin:6px 0;border-radius:12px;}
+  .btn:disabled{filter:grayscale(.7) brightness(.6);pointer-events:none;}
+  .btn.green{background:linear-gradient(135deg,#19b566,#0e7a44);box-shadow:0 6px 18px rgba(61,220,132,.3);}
+  .btn.cyanb{background:linear-gradient(135deg,#12b7d9,#0b7f99);box-shadow:0 6px 18px rgba(34,224,255,.25);}
+
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin:12px 0;}
+  .panel h3{margin:0 0 10px;font-size:15px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;}
+
+  .player-row{display:flex;gap:8px;margin:8px 0;}
+  .player-row input{
+    flex:1;padding:13px 14px;border-radius:12px;border:1px solid var(--line);
+    background:var(--card2);color:var(--ink);font-size:16px;outline:none;
+  }
+  .player-row button{width:46px;border-radius:12px;border:1px solid var(--line);background:var(--card2);color:var(--red);font-size:20px;font-weight:900;}
+
+  .seg{display:flex;gap:8px;flex-wrap:wrap;}
+  .seg button{
+    flex:1;min-width:64px;padding:11px 8px;border-radius:12px;border:1px solid var(--line);
+    background:var(--card2);color:var(--dim);font-size:15px;font-weight:700;
+  }
+  .seg button.on{background:linear-gradient(135deg,var(--cyan),#0d8aa5);color:#04222b;border-color:transparent;}
+  .decades{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+  .decades button{padding:10px 4px;border-radius:12px;border:1px solid var(--line);background:var(--card2);color:var(--dim);font-weight:700;font-size:13px;}
+  .decades button.on{background:linear-gradient(135deg,var(--yellow),#d9a12b);color:#3a2a00;border-color:transparent;}
+
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;}
+  .toggle-row .lbl{font-size:15px;}
+  .toggle-row .sub{font-size:12px;color:var(--dim);margin-top:2px;}
+  .switch{width:52px;height:30px;border-radius:20px;background:var(--card2);border:1px solid var(--line);position:relative;transition:.2s;flex-shrink:0;}
+  .switch::after{content:"";position:absolute;width:24px;height:24px;border-radius:50%;background:var(--dim);top:2px;left:3px;transition:.2s;}
+  .switch.on{background:#14683d;border-color:#1d9a5a;}
+  .switch.on::after{left:24px;background:var(--green);}
+
+  /* pass screen */
+  .pass-big{text-align:center;margin-top:60px;}
+  .pass-big .emoji{font-size:70px;}
+  .pass-big h2{font-size:30px;margin:12px 0 4px;}
+  .pass-big p{color:var(--dim);margin:0 0 30px;}
+
+  /* turn screen */
+  .hud{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .hud .who{font-size:19px;font-weight:900;}
+  .hud .meta{font-size:13px;color:var(--dim);text-align:right;line-height:1.5;}
+  .mystery{
+    background:linear-gradient(150deg,var(--card2),var(--card));
+    border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:12px;
+    display:flex;align-items:center;gap:14px;position:sticky;top:8px;z-index:5;
+    box-shadow:0 8px 24px rgba(0,0,0,.45);
+  }
+  .disc{
+    width:86px;height:86px;border-radius:50%;flex-shrink:0;position:relative;cursor:pointer;
+    background:
+      radial-gradient(circle at 50% 50%, #16161a 0 16%, transparent 16.5%),
+      repeating-radial-gradient(circle at 50% 50%, #101013 0 2px, #1c1c21 2px 4px);
+    border:3px solid #000;
+  }
+  .disc.playing{animation:spin 3.5s linear infinite;}
+  .disc .ring{position:absolute;inset:-7px;border-radius:50%;}
+  .disc .btnface{
+    position:absolute;inset:31%;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:conic-gradient(var(--pink),var(--yellow),var(--cyan),var(--pink));
+    color:#120a24;font-size:17px;font-weight:900;
+  }
+  .mystery .mtxt{flex:1;}
+  .mystery .mtxt .q{font-size:26px;font-weight:900;letter-spacing:1px;}
+  .mystery .mtxt .hint{font-size:13px;color:var(--dim);margin-top:3px;line-height:1.35;}
+  .mystery .mtxt .src{font-size:11px;color:#6b5a96;margin-top:5px;}
+
+  .tl-title{font-size:13px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin:14px 2px 6px;}
+  .slot{
+    display:block;width:100%;padding:10px;border-radius:12px;margin:6px 0;
+    border:2px dashed #5a3f8f;background:rgba(90,63,143,.12);color:#a88fd8;
+    font-size:14px;font-weight:700;cursor:pointer;transition:.15s;
+  }
+  .slot.sel{border-color:var(--cyan);background:rgba(34,224,255,.14);color:var(--cyan);transform:scale(1.02);}
+  .tcard{
+    display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);
+    border-radius:14px;padding:10px 12px;margin:4px 0;
+  }
+  .ybadge{
+    min-width:64px;text-align:center;font-weight:900;font-size:19px;padding:9px 6px;border-radius:11px;color:#120a24;
+  }
+  .tcard .info{flex:1;min-width:0;}
+  .tcard .info .t{font-weight:800;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .tcard .info .a{font-size:13px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+  .actionbar{position:sticky;bottom:10px;margin-top:14px;z-index:6;}
+  .toast{
+    position:fixed;left:50%;bottom:24px;transform:translateX(-50%);
+    background:#000c;color:#fff;padding:10px 18px;border-radius:30px;font-size:14px;
+    z-index:50;border:1px solid #ffffff33;backdrop-filter:blur(6px);
+    opacity:0;pointer-events:none;transition:.25s;max-width:88%;text-align:center;
+  }
+  .toast.show{opacity:1;}
+
+  /* reveal */
+  .flip{perspective:1000px;margin:30px auto 10px;max-width:340px;}
+  .flip-inner{position:relative;transform-style:preserve-3d;transition:transform .7s cubic-bezier(.2,.7,.2,1);}
+  .flip.revealed .flip-inner{transform:rotateY(180deg);}
+  .face{backface-visibility:hidden;border-radius:22px;overflow:hidden;}
+  .face.front{
+    background:linear-gradient(150deg,var(--card2),var(--card));border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;height:300px;font-size:90px;font-weight:900;color:#5a3f8f;
+  }
+  .face.back{
+    position:absolute;inset:0;transform:rotateY(180deg);
+    border:1px solid var(--line);height:300px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;padding:18px;
+  }
+  .face.back .art{width:92px;height:92px;border-radius:14px;background:#0008 center/cover;margin-bottom:4px;border:1px solid #ffffff2a;}
+  .face.back .year{font-size:52px;font-weight:900;line-height:1;}
+  .face.back .title{font-size:19px;font-weight:800;}
+  .face.back .artist{font-size:15px;opacity:.85;}
+  .verdict{text-align:center;font-size:22px;font-weight:900;margin:16px 0 4px;}
+  .verdict.ok{color:var(--green);} .verdict.bad{color:var(--red);}
+  .verdict-sub{text-align:center;color:var(--dim);font-size:14px;margin-bottom:14px;}
+
+  /* win */
+  .win-big{text-align:center;margin-top:40px;}
+  .win-big .cup{font-size:80px;}
+  .win-big h2{font-size:32px;margin:8px 0;}
+  .rank{margin:20px 0;}
+  .rank .row{display:flex;justify-content:space-between;padding:12px 16px;background:var(--card);border:1px solid var(--line);border-radius:12px;margin:6px 0;font-weight:700;}
+
+  /* db test */
+  .dbrow{display:flex;justify-content:space-between;gap:10px;padding:8px 10px;border-bottom:1px solid #ffffff12;font-size:13px;}
+  .dbrow .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--dim);}
+  .ok2{color:var(--green);font-weight:900;} .bad2{color:var(--red);font-weight:900;}
+  .progressbar{height:8px;border-radius:6px;background:var(--card2);overflow:hidden;margin:10px 0;}
+  .progressbar > div{height:100%;width:0%;background:linear-gradient(90deg,var(--pink),var(--cyan));transition:.2s;}
+
+  .rules p{color:#d9cdf2;font-size:15px;line-height:1.55;margin:10px 0;}
+  .rules b{color:var(--yellow);}
+  .footnote{text-align:center;color:#6b5a96;font-size:12px;margin-top:18px;line-height:1.5;}
+  .tokens{font-size:15px;}
+  .backlink{color:var(--dim);text-decoration:none;font-size:14px;display:inline-block;margin-bottom:8px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============ HOME ============ -->
+  <section class="screen active" id="s-home">
+    <div class="disc-hero"></div>
+    <h1 class="logo">HIPSTER</h1>
+    <p class="tagline">muzyczna gra domówkowa · ułóż hity na osi czasu</p>
+    <button class="btn" onclick="go('s-setup')">▶ &nbsp;Nowa gra</button>
+    <button class="btn secondary" onclick="go('s-rules')">Zasady gry</button>
+    <button class="btn ghost" onclick="go('s-dbtest')">🛠 Test bazy utworów</button>
+    <p class="footnote">Do odtwarzania próbek potrzebny jest internet.<br>Dodaj tę stronę do ekranu głównego, żeby grać jak w aplikacji.</p>
+  </section>
+
+  <!-- ============ SETUP ============ -->
+  <section class="screen" id="s-setup">
+    <a class="backlink" href="#" onclick="go('s-home');return false;">← wróć</a>
+    <div class="panel">
+      <h3>Gracze (2–8)</h3>
+      <div id="players-box"></div>
+      <button class="btn small secondary" onclick="addPlayer()">+ Dodaj gracza</button>
+    </div>
+    <div class="panel">
+      <h3>Cel gry (liczba kart)</h3>
+      <div class="seg" id="seg-target">
+        <button data-v="5">5 · szybka</button>
+        <button data-v="8">8 · średnia</button>
+        <button data-v="10" class="on">10 · klasyk</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>Dekady</h3>
+      <div class="decades" id="decades-box"></div>
+      <div class="toggle-row" style="margin-top:10px;">
+        <div><div class="lbl">Żetony HIPSTER</div><div class="sub">za odgadnięcie tytułu i wykonawcy; żeton = wymiana utworu</div></div>
+        <div class="switch on" id="sw-tokens" onclick="this.classList.toggle('on')"></div>
+      </div>
+    </div>
+    <button class="btn green" onclick="startGame()">Zaczynamy! 🎶</button>
+  </section>
+
+  <!-- ============ PASS ============ -->
+  <section class="screen" id="s-pass">
+    <div class="pass-big">
+      <div class="emoji">📱➡️</div>
+      <h2 id="pass-name">—</h2>
+      <p>podaj telefon tej osobie</p>
+      <button class="btn cyanb" onclick="beginTurn()">Mam telefon — gramy!</button>
+    </div>
+  </section>
+
+  <!-- ============ TURN ============ -->
+  <section class="screen" id="s-turn">
+    <div class="hud">
+      <div class="who" id="hud-name">—</div>
+      <div class="meta" id="hud-meta">—</div>
+    </div>
+    <div class="mystery">
+      <div class="disc" id="disc" onclick="togglePlay()">
+        <div class="ring" id="ring"></div>
+        <div class="btnface" id="discbtn">▶</div>
+      </div>
+      <div class="mtxt">
+        <div class="q">Tajemniczy utwór</div>
+        <div class="hint">Posłuchaj i wskaż miejsce na swojej osi czasu. Z którego roku jest ten hit?</div>
+        <div class="src" id="mystery-src"></div>
+      </div>
+    </div>
+    <button class="btn small secondary" id="btn-swap" onclick="swapSong()">🎟 Wymień utwór (masz: <span id="tok-count">0</span>)</button>
+    <div class="tl-title">Twoja oś czasu — wybierz miejsce dla nowej karty</div>
+    <div id="timeline"></div>
+    <div class="actionbar">
+      <button class="btn" id="btn-confirm" disabled onclick="confirmPlacement()">Zatwierdź miejsce</button>
+    </div>
+  </section>
+
+  <!-- ============ REVEAL ============ -->
+  <section class="screen" id="s-reveal">
+    <div class="flip" id="flip">
+      <div class="flip-inner">
+        <div class="face front">?</div>
+        <div class="face back" id="reveal-back">
+          <div class="art" id="rev-art"></div>
+          <div class="year" id="rev-year">19XX</div>
+          <div class="title" id="rev-title">—</div>
+          <div class="artist" id="rev-artist">—</div>
+        </div>
+      </div>
+    </div>
+    <div class="verdict" id="verdict">—</div>
+    <div class="verdict-sub" id="verdict-sub"></div>
+    <div class="panel" id="token-panel" style="display:none;">
+      <h3>Bonus 🎟 — powiedział(a) przed odkryciem, co to za utwór?</h3>
+      <button class="btn small green" onclick="awardToken(true)">Tak! Tytuł + wykonawca (+1 żeton)</button>
+      <button class="btn small secondary" onclick="awardToken(false)">Nie / nie zgadywał(a)</button>
+    </div>
+    <button class="btn" id="btn-next" onclick="nextTurn()" style="display:none;">Dalej ➜</button>
+  </section>
+
+  <!-- ============ WIN ============ -->
+  <section class="screen" id="s-win">
+    <div class="win-big">
+      <div class="cup">🏆</div>
+      <h2 id="win-name">—</h2>
+      <p style="color:var(--dim);">wygrywa z kompletem kart!</p>
+    </div>
+    <div class="rank" id="rank"></div>
+    <button class="btn" onclick="location.hash='';go('s-setup')">Zagraj jeszcze raz</button>
+    <button class="btn secondary" onclick="go('s-home')">Menu główne</button>
+  </section>
+
+  <!-- ============ RULES ============ -->
+  <section class="screen" id="s-rules">
+    <a class="backlink" href="#" onclick="go('s-home');return false;">← wróć</a>
+    <div class="panel rules">
+      <h3>Zasady</h3>
+      <p>1. Gracie na <b>jednym telefonie</b>, który krąży między graczami. Każdy zaczyna z jedną odkrytą kartą na swojej osi czasu.</p>
+      <p>2. W swojej turze naciśnij <b>▶</b> i posłuchaj 30-sekundowej próbki tajemniczego utworu.</p>
+      <p>3. Wskaż, <b>gdzie na Twojej osi czasu</b> (chronologicznie, według roku wydania) leży ten utwór: przed najstarszą kartą, między kartami, albo po najnowszej.</p>
+      <p>4. Karta się odkrywa. <b>Dobrze?</b> Karta zostaje u Ciebie. <b>Źle?</b> Karta przepada.</p>
+      <p>5. Grając z żetonami: jeśli przed odkryciem podasz <b>tytuł i wykonawcę</b>, dostajesz żeton 🎟. Żeton możesz wydać, żeby <b>wymienić</b> trudny utwór na inny.</p>
+      <p>6. Wygrywa pierwsza osoba, która uzbiera <b>komplet kart</b> (domyślnie 10).</p>
+      <p>7. Lata przy remisie: jeśli sąsiednie karty mają ten sam rok, każde ich wzajemne ustawienie jest poprawne.</p>
+    </div>
+    <p class="footnote">Domowa gra inspirowana Hitsterem. Próbki: iTunes / Deezer (30 s).</p>
+  </section>
+
+  <!-- ============ DB TEST ============ -->
+  <section class="screen" id="s-dbtest">
+    <a class="backlink" href="#" onclick="stopDbTest();go('s-home');return false;">← wróć</a>
+    <div class="panel">
+      <h3>Test bazy utworów</h3>
+      <p style="color:var(--dim);font-size:14px;margin:4px 0 10px;">Sprawdza po kolei, czy dla każdego utworu da się znaleźć próbkę audio (iTunes → Deezer). Utwory niedostępne zostaną wyłączone z gry w tej sesji.</p>
+      <button class="btn small cyanb" id="btn-dbtest" onclick="runDbTest()">Uruchom test</button>
+      <div class="progressbar"><div id="db-prog"></div></div>
+      <div id="db-summary" style="font-size:14px;color:var(--dim);margin-bottom:6px;"></div>
+      <div id="db-list"></div>
+    </div>
+  </section>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================================================================
+   HIPSTER — domowa muzyczna gra w oś czasu (inspirowana Hitsterem)
+   Jeden plik, zero zależności. Próbki 30 s: iTunes Search API → Deezer API (JSONP).
+   ================================================================ */
+
+/* ---------------- BAZA UTWORÓW ----------------
+   y = rok pierwszego wydania (singiel/album/premiera festiwalowa)
+   q = opcjonalne własne zapytanie do wyszukiwarki                     */
+const SONGS = [
+  // ------- lata 60. -------
+  {a:"Czesław Niemen", t:"Dziwny jest ten świat", y:1967},
+  {a:"Czesław Niemen", t:"Sen o Warszawie", y:1966},
+  {a:"Czerwone Gitary", t:"Anna Maria", y:1968},
+  {a:"Czerwone Gitary", t:"Takie ładne oczy", y:1966},
+  {a:"Karin Stanek", t:"Malowana lala", y:1962},
+  {a:"Anna German", t:"Tańczące Eurydyki", y:1964},
+  {a:"Skaldowie", t:"Wszystko mi mówi, że mnie ktoś pokochał", y:1968, q:"Skaldowie Wszystko mi mówi"},
+  {a:"Skaldowie", t:"Prześliczna wiolonczelistka", y:1970},
+  {a:"Anna German", t:"Człowieczy los", y:1970},
+  // ------- lata 70. -------
+  {a:"2 plus 1", t:"Chodź, pomaluj mój świat", y:1971, q:"2 plus 1 pomaluj mój świat"},
+  {a:"Maryla Rodowicz", t:"Małgośka", y:1973},
+  {a:"Maryla Rodowicz", t:"Sing-Sing", y:1976},
+  {a:"Maryla Rodowicz", t:"Remedium", y:1978},
+  {a:"Anna Jantar", t:"Tyle słońca w całym mieście", y:1974},
+  {a:"Budka Suflera", t:"Cień wielkiej góry", y:1975},
+  {a:"Krzysztof Krawczyk", t:"Parostatek", y:1979},
+  {a:"Happy End", t:"Jak się masz, kochanie", y:1977, q:"Happy End Jak się masz kochanie"},
+  {a:"Czerwone Gitary", t:"Ciągle pada", y:1974},
+  {a:"Irena Jarocka", t:"Odpływają kawiarenki", y:1975},
+  {a:"Zbigniew Wodecki", t:"Zacznij od Bacha", y:1976},
+  // ------- lata 80. -------
+  {a:"Perfect", t:"Nie płacz, Ewka", y:1981, q:"Perfect Nie płacz Ewka"},
+  {a:"Perfect", t:"Autobiografia", y:1982},
+  {a:"Maanam", t:"Boskie Buenos", y:1980},
+  {a:"Maanam", t:"Kocham cię, kochanie moje", y:1983, q:"Maanam Kocham cię kochanie moje"},
+  {a:"Republika", t:"Biała flaga", y:1982},
+  {a:"Lady Pank", t:"Mniej niż zero", y:1983},
+  {a:"Lady Pank", t:"Kryzysowa narzeczona", y:1983},
+  {a:"Izabela Trojanowska", t:"Wszystko, czego dziś chcę", y:1981, q:"Trojanowska Wszystko czego dziś chcę"},
+  {a:"Urszula", t:"Dmuchawce, latawce, wiatr", y:1983, q:"Urszula Dmuchawce latawce wiatr"},
+  {a:"Franek Kimono", t:"King Bruce Lee karate mistrz", y:1983},
+  {a:"Kombi", t:"Słodkiego, miłego życia", y:1984, q:"Kombi Słodkiego miłego życia"},
+  {a:"Lombard", t:"Przeżyj to sam", y:1983},
+  {a:"Lombard", t:"Szklana pogoda", y:1983},
+  {a:"Papa Dance", t:"Nasz Disneyland", y:1988},
+  {a:"Obywatel G.C.", t:"Nie pytaj o Polskę", y:1988, q:"Obywatel GC Nie pytaj o Polskę"},
+  {a:"Kult", t:"Arahja", y:1988},
+  {a:"Mr. Zoob", t:"Mój jest ten kawałek podłogi", y:1985, q:"Mr Zoob kawałek podłogi"},
+  {a:"Andrzej Zaucha", t:"Byłaś serca biciem", y:1988},
+  {a:"Zbigniew Wodecki", t:"Chałupy welcome to", y:1985},
+  {a:"Rezerwat", t:"Zaopiekuj się mną", y:1986},
+  {a:"Halina Frąckowiak", t:"Papierowy księżyc", y:1985},
+  // ------- lata 90. -------
+  {a:"Lady Pank", t:"Zawsze tam, gdzie ty", y:1990, q:"Lady Pank Zawsze tam gdzie ty"},
+  {a:"Bajm", t:"Biała armia", y:1990},
+  {a:"Hey", t:"Moja i twoja nadzieja", y:1993},
+  {a:"Wilki", t:"Son of the Blue Sky", y:1992},
+  {a:"Elektryczne Gitary", t:"Co ty tutaj robisz", y:1992},
+  {a:"Elektryczne Gitary", t:"Kiler", y:1997},
+  {a:"Kasia Kowalska", t:"A to, co mam", y:1994, q:"Kasia Kowalska A to co mam"},
+  {a:"Varius Manx", t:"Orła cień", y:1995},
+  {a:"Edyta Bartosiewicz", t:"Ostatni", y:1995},
+  {a:"Budka Suflera", t:"Takie tango", y:1997},
+  {a:"Myslovitz", t:"To nie był film", y:1999},
+  {a:"Paktofonika", t:"Jestem Bogiem", y:2000},
+  {a:"Liroy", t:"Scoobiedoo Ya", y:1995, q:"Liroy Scoobiedoo"},
+  {a:"Kayah", t:"Śpij kochanie, śpij", y:1999, q:"Kayah Bregović Śpij kochanie śpij"},
+  {a:"Kayah", t:"Supermenka", y:1997},
+  {a:"Anita Lipnicka", t:"I wszystko się może zdarzyć", y:1996},
+  {a:"Robert Gawliński", t:"Nie stało się nic", y:1994},
+  {a:"O.N.A.", t:"Kiedy powiem sobie dość", y:1995, q:"ONA Kiedy powiem sobie dość"},
+  {a:"T.Love", t:"Chłopaki nie płaczą", y:1996, q:"T.Love Chłopaki nie płaczą"},
+  {a:"T.Love", t:"King", y:1992, q:"T.Love King"},
+  {a:"Golec uOrkiestra", t:"Ściernisco", y:1999},
+  {a:"Brathanki", t:"Czerwone korale", y:2000},
+  {a:"Golden Life", t:"Oprócz błękitnego nieba", y:1995, q:"Golden Life 24.11.94"},
+  {a:"Ira", t:"Ona jest ze snu", y:1993},
+  {a:"Boys", t:"Wolność", y:1996},
+  {a:"Norbi", t:"Kobiety są gorące", y:1997},
+  // ------- lata 2000. -------
+  {a:"Łzy", t:"Agnieszka już dawno tutaj nie mieszka", y:2000, q:"Łzy Agnieszka"},
+  {a:"Ich Troje", t:"Powiedz", y:2001},
+  {a:"Blue Café", t:"You May Be in Love", y:2002},
+  {a:"Wilki", t:"Baśka", y:2002},
+  {a:"Sistars", t:"Sutra", y:2003},
+  {a:"Agnieszka Chylińska", t:"Winna", y:2004},
+  {a:"Sidney Polak", t:"Otwieram wino", y:2004},
+  {a:"Coma", t:"Spadam", y:2004},
+  {a:"Kombii", t:"Pokolenie", y:2005},
+  {a:"Kasia Cerekwicka", t:"Na kolana", y:2006},
+  {a:"Hurt", t:"Załoga G", y:2006},
+  {a:"Feel", t:"A gdy jest już ciemno", y:2007},
+  {a:"Doda", t:"Nie daj się", y:2007},
+  {a:"Ewa Farna", t:"Cicho", y:2009},
+  {a:"Myslovitz", t:"Długość dźwięku samotności", y:1999},
+  // ------- lata 2010. -------
+  {a:"Brodka", t:"W pięciu smakach", y:2010},
+  {a:"Sylwia Grzeszczak", t:"Małe rzeczy", y:2011},
+  {a:"Enej", t:"Skrzydlate ręce", y:2011},
+  {a:"Zakopower", t:"Boso", y:2011},
+  {a:"LemON", t:"Napraw", y:2012},
+  {a:"Dawid Podsiadło", t:"Trójkąty i kwadraty", y:2013},
+  {a:"Margaret", t:"Thank You Very Much", y:2013},
+  {a:"Donatan & Cleo", t:"My Słowianie", y:2013, q:"Donatan Cleo My Słowianie"},
+  {a:"Piersi", t:"Bałkanica", y:2013},
+  {a:"Mrozu", t:"Jak nie my, to kto", y:2013, q:"Mrozu Tomson Jak nie my to kto"},
+  {a:"Akcent", t:"Przez twe oczy zielone", y:2014, q:"Akcent Przez twe oczy zielone"},
+  {a:"Sarsa", t:"Naucz mnie", y:2015},
+  {a:"Kortez", t:"Bumerang", y:2015},
+  {a:"Taco Hemingway", t:"Deszcz na betonie", y:2015},
+  {a:"Krzysztof Zalewski", t:"Miłość miłość", y:2016, q:"Zalewski Miłość miłość"},
+  {a:"Daria Zawiałow", t:"Malinowy Chruśniak", y:2017},
+  {a:"Dawid Podsiadło", t:"Małomiasteczkowy", y:2018},
+  {a:"Męskie Granie Orkiestra 2018", t:"Początek", y:2018, q:"Męskie Granie Orkiestra Początek"},
+  {a:"Kwiat Jabłoni", t:"Dziś późno pójdę spać", y:2018},
+  // ------- lata 2020. -------
+  {a:"Sanah", t:"Szampan", y:2020},
+  {a:"Vito Bambino", t:"Bongo", y:2020},
+  {a:"Sobel", t:"Fiołkowe pole", y:2020},
+  {a:"Sanah", t:"Ale jazz!", y:2021, q:"Sanah Vito Bambino Ale jazz"},
+  {a:"Mata", t:"Kiss cam (podryw roku)", y:2021, q:"Mata Kiss cam"},
+  {a:"Kaśka Sochacka", t:"Ciche dni", y:2021},
+  {a:"bryska", t:"gorzka", y:2022},
+  {a:"Jann", t:"Gladiator", y:2022},
+  {a:"Daria Zawiałow", t:"Za krótki sen", y:2023, q:"Daria Zawiałow Podsiadło Za krótki sen"},
+];
+SONGS.forEach((s,i)=>{ s.id=i; s.unavailable=false; });
+
+/* ---------------- NARZĘDZIA ---------------- */
+const $=id=>document.getElementById(id);
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  $(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+let toastTimer=null;
+function toast(msg,ms=2600){
+  const t=$('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),ms);
+}
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}
+  return arr;
+}
+function norm(s){
+  return (s||'').toLowerCase().replace(/ł/g,'l')
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim();
+}
+function decadeColor(y){
+  if(y<1970) return '#f4a261';
+  if(y<1980) return '#ffd166';
+  if(y<1990) return '#ff2e88';
+  if(y<2000) return '#22e0ff';
+  if(y<2010) return '#3ddc84';
+  if(y<2020) return '#b28dff';
+  return '#ff9f68';
+}
+
+/* ---------------- JSONP + WYSZUKIWANIE PRÓBEK ---------------- */
+let jsonpN=0;
+function jsonp(url,timeout=9000){
+  return new Promise((resolve,reject)=>{
+    const cb='__hip_cb'+(jsonpN++);
+    const s=document.createElement('script');
+    const timer=setTimeout(()=>{cleanup();reject(new Error('timeout'));},timeout);
+    function cleanup(){ try{delete window[cb];}catch(e){window[cb]=undefined;} clearTimeout(timer); if(s.parentNode)s.parentNode.removeChild(s); }
+    window[cb]=data=>{cleanup();resolve(data);};
+    s.onerror=()=>{cleanup();reject(new Error('network'));};
+    s.src=url+(url.includes('?')?'&':'?')+'callback='+cb;
+    document.head.appendChild(s);
+  });
+}
+const BAD_WORDS=['karaoke','tribute','cover','instrumental','w stylu','made famous','originally performed','backing track'];
+const SOFT_BAD=['live','koncert','remix','rmx','akustycz','acoustic','unplugged','demo','medley','po latach','nowa wersja','symfonicznie','reedycja'];
+function isGoodMatch(candTitle,candArtist,song){
+  const nt=norm(candTitle), na=norm(candArtist);
+  const wantT=norm(song.t), wantA=norm(song.a);
+  if(BAD_WORDS.some(w=>nt.includes(w)||na.includes(w))) return false;
+  // wszystkie znaczące słowa tytułu muszą wystąpić
+  const tokens=wantT.split(' ').filter(w=>w.length>1);
+  if(!tokens.every(w=>nt.includes(w))) return false;
+  // przynajmniej jedno słowo wykonawcy
+  const aTokens=wantA.split(' ').filter(w=>w.length>1);
+  if(aTokens.length && !aTokens.some(w=>na.includes(w))) return false;
+  // odrzuć wersje live/remix itd., o ile nie ma ich w oryginalnym tytule
+  if(SOFT_BAD.some(w=>nt.includes(w)&&!wantT.includes(w))) return false;
+  return true;
+}
+async function lookupItunes(song){
+  const q=song.q||`${song.a} ${song.t}`;
+  const data=await jsonp(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&country=PL&media=music&entity=song&limit=12`);
+  const list=(data&&data.results)||[];
+  const hit=list.find(r=>r.previewUrl&&isGoodMatch(r.trackName,r.artistName,song));
+  if(!hit) return null;
+  return {url:hit.previewUrl, art:(hit.artworkUrl100||'').replace('100x100','300x300'), source:'iTunes'};
+}
+async function lookupDeezer(song){
+  const q=song.q||`${song.a} ${song.t}`;
+  const data=await jsonp(`https://api.deezer.com/search?q=${encodeURIComponent(q)}&limit=12&output=jsonp`);
+  const list=(data&&data.data)||[];
+  const hit=list.find(r=>r.preview&&isGoodMatch(r.title,(r.artist&&r.artist.name)||'',song));
+  if(!hit) return null;
+  return {url:hit.preview, art:(hit.album&&(hit.album.cover_medium||hit.album.cover))||'', source:'Deezer'};
+}
+const previewCache=new Map();
+async function findPreview(song){
+  if(previewCache.has(song.id)) return previewCache.get(song.id);
+  let res=null;
+  try{ res=await lookupItunes(song); }catch(e){}
+  if(!res){ try{ res=await lookupDeezer(song); }catch(e){} }
+  previewCache.set(song.id,res);
+  return res;
+}
+
+/* ---------------- AUDIO ---------------- */
+const player=new Audio();
+player.preload='auto';
+let discEl=null;
+player.addEventListener('timeupdate',()=>{
+  const d=player.duration||30, p=Math.min(1,player.currentTime/d);
+  $('ring').style.background=`conic-gradient(var(--cyan) ${p*360}deg, #ffffff18 ${p*360}deg)`;
+});
+player.addEventListener('ended',()=>{ setDiscPlaying(false); $('discbtn').textContent='↻'; });
+player.addEventListener('error',()=>{ setDiscPlaying(false); });
+function setDiscPlaying(on){
+  $('disc').classList.toggle('playing',on);
+  $('discbtn').textContent=on?'❚❚':'▶';
+}
+function togglePlay(){
+  if(!player.src) return;
+  if(player.paused){ player.play().then(()=>setDiscPlaying(true)).catch(()=>toast('Nie udało się odtworzyć — spróbuj jeszcze raz')); }
+  else { player.pause(); setDiscPlaying(false); }
+}
+function stopAudio(){ try{player.pause();}catch(e){} player.currentTime=0; setDiscPlaying(false); $('ring').style.background='conic-gradient(#ffffff18 0deg)'; }
+
+/* ---------------- STAN GRY ---------------- */
+const G={
+  players:[], cur:0, target:10, tokensOn:true,
+  deck:[], discard:[], current:null, currentPreview:null, selSlot:null,
+  lastResult:null, decades:new Set(),
+};
+const DECADE_DEFS=[
+  {k:60,label:'60.'},{k:70,label:'70.'},{k:80,label:'80.'},{k:90,label:'90.'},
+  {k:2000,label:'2000'},{k:2010,label:'2010'},{k:2020,label:'2020+'}
+];
+function decadeKey(y){ if(y<1970)return 60; if(y<1980)return 70; if(y<1990)return 80; if(y<2000)return 90; if(y<2010)return 2000; if(y<2020)return 2010; return 2020; }
+
+/* ---------------- EKRAN USTAWIEŃ ---------------- */
+function addPlayer(name){
+  const box=$('players-box');
+  if(box.children.length>=8){toast('Maksymalnie 8 graczy');return;}
+  const row=document.createElement('div');
+  row.className='player-row';
+  row.innerHTML=`<input type="text" maxlength="14" placeholder="Imię gracza ${box.children.length+1}" value="${name||''}">
+                 <button onclick="this.parentNode.remove()">✕</button>`;
+  box.appendChild(row);
+}
+function initSetup(){
+  const box=$('players-box');
+  if(!box.children.length){ addPlayer(); addPlayer(); }
+  const dbox=$('decades-box');
+  if(!dbox.children.length){
+    DECADE_DEFS.forEach(d=>{
+      const b=document.createElement('button');
+      b.textContent=d.label; b.className='on'; b.dataset.k=d.k;
+      b.onclick=()=>b.classList.toggle('on');
+      dbox.appendChild(b);
+    });
+  }
+  $('seg-target').querySelectorAll('button').forEach(b=>{
+    b.onclick=()=>{ $('seg-target').querySelectorAll('button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); };
+  });
+}
+initSetup();
+
+function startGame(){
+  const names=[...$('players-box').querySelectorAll('input')]
+    .map((inp,i)=>inp.value.trim()||('Gracz '+(i+1)));
+  if(names.length<2){ toast('Potrzeba co najmniej 2 graczy'); return; }
+  G.target=+$('seg-target').querySelector('.on').dataset.v;
+  G.tokensOn=$('sw-tokens').classList.contains('on');
+  G.decades=new Set([...$('decades-box').querySelectorAll('button.on')].map(b=>+b.dataset.k));
+  if(!G.decades.size){ toast('Wybierz co najmniej jedną dekadę'); return; }
+
+  const pool=SONGS.filter(s=>!s.unavailable&&G.decades.has(decadeKey(s.y)));
+  const needed=names.length*(G.target+2);
+  if(pool.length<Math.max(20,needed*0.6)){ toast('Mało utworów w wybranych dekadach — może być krótko!'); }
+  if(pool.length<names.length+5){ toast('Za mało utworów — zaznacz więcej dekad'); return; }
+
+  G.deck=shuffle(pool.map(s=>s.id));
+  G.discard=[];
+  G.players=names.map(n=>({name:n,timeline:[],tokens:0}));
+  // karta startowa dla każdego gracza
+  G.players.forEach(p=>{ p.timeline.push(G.deck.shift()); });
+  G.cur=Math.floor(Math.random()*G.players.length);
+  showPass();
+}
+
+/* ---------------- PĘTLA GRY ---------------- */
+function showPass(){
+  $('pass-name').textContent=G.players[G.cur].name;
+  go('s-pass');
+}
+async function beginTurn(){
+  go('s-turn');
+  const p=G.players[G.cur];
+  $('hud-name').textContent=p.name;
+  renderHud(); renderTimeline(true);
+  $('btn-confirm').disabled=true;
+  G.selSlot=null;
+  $('mystery-src').textContent='Szukam utworu…';
+  stopAudio(); player.src='';
+  await drawCurrent();
+}
+function renderHud(){
+  const p=G.players[G.cur];
+  $('hud-meta').innerHTML=`karty: <b style="color:var(--yellow)">${p.timeline.length}/${G.target}</b><br>żetony: <b style="color:var(--cyan)">${p.tokens}</b> 🎟`;
+  $('tok-count').textContent=p.tokens;
+  $('btn-swap').style.display=G.tokensOn?'block':'none';
+  $('btn-swap').disabled=p.tokens<1;
+}
+async function drawCurrent(){
+  // dobiera utwór z dostępną próbką; niedostępne oznacza i pomija
+  while(true){
+    if(!G.deck.length){
+      if(G.discard.length){ G.deck=shuffle(G.discard.splice(0)); }
+      else { endByExhaustion(); return; }
+    }
+    const id=G.deck.shift();
+    const song=SONGS[id];
+    $('mystery-src').textContent='Szukam utworu…';
+    const res=await findPreview(song);
+    if(res){
+      G.current=song; G.currentPreview=res;
+      player.src=res.url;
+      $('mystery-src').textContent='źródło próbki: '+res.source;
+      $('discbtn').textContent='▶';
+      prefetchNext();
+      return;
+    }
+    song.unavailable=true; // nie wraca do talii
+  }
+}
+function prefetchNext(){
+  const nextId=G.deck[0];
+  if(nextId!=null) findPreview(SONGS[nextId]);
+}
+function renderTimeline(withSlots){
+  const p=G.players[G.cur];
+  const tl=p.timeline.map(id=>SONGS[id]).sort((a,b)=>a.y-b.y);
+  p.timeline=tl.map(s=>s.id);
+  const box=$('timeline'); box.innerHTML='';
+  const mkSlot=i=>{
+    const b=document.createElement('button');
+    b.className='slot'; b.dataset.i=i;
+    b.textContent = i===0 ? '⟵ wcześniej niż '+tl[0].y : (i===tl.length ? 'później niż '+tl[tl.length-1].y+' ⟶' : tl[i-1].y+' … tutaj … '+tl[i].y);
+    b.onclick=()=>{ document.querySelectorAll('.slot').forEach(s=>s.classList.remove('sel')); b.classList.add('sel'); G.selSlot=i; $('btn-confirm').disabled=false; };
+    box.appendChild(b);
+  };
+  tl.forEach((s,i)=>{
+    if(withSlots) mkSlot(i);
+    const c=document.createElement('div');
+    c.className='tcard';
+    c.innerHTML=`<div class="ybadge" style="background:${decadeColor(s.y)}">${s.y}</div>
+      <div class="info"><div class="t">${s.t}</div><div class="a">${s.a}</div></div>`;
+    box.appendChild(c);
+  });
+  if(withSlots) mkSlot(tl.length);
+}
+function swapSong(){
+  const p=G.players[G.cur];
+  if(p.tokens<1) return;
+  p.tokens--; renderHud();
+  stopAudio(); player.src='';
+  G.discard.push(G.current.id);
+  toast('🎟 Wymieniam utwór…');
+  drawCurrent();
+}
+function confirmPlacement(){
+  if(G.selSlot==null||!G.current) return;
+  stopAudio();
+  const p=G.players[G.cur];
+  const tl=p.timeline.map(id=>SONGS[id]);
+  const y=G.current.y, i=G.selSlot;
+  const okLeft = i===0 || tl[i-1].y<=y;
+  const okRight = i===tl.length || y<=tl[i].y;
+  const correct=okLeft&&okRight;
+  G.lastResult=correct;
+  // reveal
+  $('rev-year').textContent=G.current.y;
+  $('rev-year').style.color=decadeColor(G.current.y);
+  $('rev-title').textContent=G.current.t;
+  $('rev-artist').textContent=G.current.a;
+  const hasArt=G.currentPreview&&G.currentPreview.art;
+  $('rev-art').style.backgroundImage=hasArt?`url(${G.currentPreview.art})`:'none';
+  $('rev-art').style.display=hasArt?'block':'none';
+  $('reveal-back').style.background=`linear-gradient(160deg, ${decadeColor(G.current.y)}22, var(--card))`;
+  $('flip').classList.remove('revealed');
+  $('verdict').textContent=''; $('verdict-sub').textContent='';
+  $('token-panel').style.display='none'; $('btn-next').style.display='none';
+  go('s-reveal');
+  setTimeout(()=>{
+    $('flip').classList.add('revealed');
+    setTimeout(()=>{
+      const v=$('verdict');
+      if(correct){ v.textContent='DOBRZE! Karta zostaje 🎉'; v.className='verdict ok';
+        p.timeline.push(G.current.id);
+      } else { v.textContent='NIESTETY… karta przepada'; v.className='verdict bad';
+        G.discard.push(G.current.id);
+        $('verdict-sub').textContent=`Prawidłowe miejsce: rok ${G.current.y}.`;
+      }
+      if(G.tokensOn){ $('token-panel').style.display='block'; }
+      else { $('btn-next').style.display='block'; }
+      checkWinSoon();
+    },750);
+  },350);
+}
+let winnerPending=false;
+function checkWinSoon(){
+  const p=G.players[G.cur];
+  winnerPending = p.timeline.length>=G.target;
+}
+function awardToken(yes){
+  if(yes){ G.players[G.cur].tokens++; toast('🎟 +1 żeton!'); }
+  $('token-panel').style.display='none';
+  $('btn-next').style.display='block';
+}
+function nextTurn(){
+  if(winnerPending){ showWin(); return; }
+  G.cur=(G.cur+1)%G.players.length;
+  G.current=null; G.currentPreview=null;
+  showPass();
+}
+function showWin(){
+  winnerPending=false;
+  const w=G.players[G.cur];
+  $('win-name').textContent=w.name+' 🥇';
+  const r=$('rank');
+  r.innerHTML='';
+  [...G.players].sort((a,b)=>b.timeline.length-a.timeline.length||b.tokens-a.tokens)
+    .forEach((p,i)=>{
+      const row=document.createElement('div'); row.className='row';
+      row.innerHTML=`<span>${i+1}. ${p.name}</span><span>${p.timeline.length} kart · ${p.tokens} 🎟</span>`;
+      r.appendChild(row);
+    });
+  go('s-win');
+}
+function endByExhaustion(){
+  toast('Skończyły się utwory!');
+  let best=0;
+  G.players.forEach((p,i)=>{ if(p.timeline.length>G.players[best].timeline.length) best=i; });
+  G.cur=best; showWin();
+}
+
+/* ---------------- TEST BAZY ---------------- */
+let dbTestRunning=false;
+function stopDbTest(){ dbTestRunning=false; }
+async function runDbTest(){
+  if(dbTestRunning) return;
+  dbTestRunning=true;
+  const list=$('db-list'), prog=$('db-prog'), sum=$('db-summary');
+  list.innerHTML=''; let ok=0,bad=0;
+  $('btn-dbtest').disabled=true;
+  for(let i=0;i<SONGS.length;i++){
+    if(!dbTestRunning) break;
+    const s=SONGS[i];
+    const res=await findPreview(s);
+    const row=document.createElement('div');
+    row.className='dbrow';
+    if(res){ ok++; row.innerHTML=`<span class="nm">${s.a} – ${s.t}</span><span class="ok2">✓ ${res.source}</span>`; }
+    else { bad++; s.unavailable=true; row.innerHTML=`<span class="nm">${s.a} – ${s.t}</span><span class="bad2">✗ brak</span>`; }
+    list.appendChild(row);
+    prog.style.width=((i+1)/SONGS.length*100)+'%';
+    sum.textContent=`Dostępne: ${ok} · Brak: ${bad} · Sprawdzono ${i+1}/${SONGS.length}`;
+    await new Promise(r=>setTimeout(r,250));
+  }
+  $('btn-dbtest').disabled=false;
+  dbTestRunning=false;
+  sum.textContent+=' — gotowe. Niedostępne utwory wyłączono z gry.';
+}
+</script>
+</body>
+</html>
